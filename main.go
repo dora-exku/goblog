@@ -3,16 +3,13 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-func defaultHandler(w http.ResponseWriter, r *http.Request) {
+func homeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if r.URL.Path == "/" {
-		fmt.Fprint(w, "这里是首页 <a href=\"/about\">关于</a>")
-	} else {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprint(w, "404 NOT FOUND")
-	}
+	fmt.Fprint(w, "<h1>欢迎来到Blog</h1>")
 }
 
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
@@ -20,12 +17,41 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "这里是关于页面 <a href=\"/\">首页</a>")
 }
 
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, "404 not found")
+}
+
+func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	fmt.Fprint(w, "文章ID:"+id)
+}
+
+func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "文章列表")
+}
+
+func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "添加文章")
+}
+
 func main() {
 	fmt.Println("http://localhost:3000")
-	router := http.NewServeMux()
+	router := mux.NewRouter()
 
-	router.HandleFunc("/", defaultHandler)
-	router.HandleFunc("/about", aboutHandler)
+	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
+	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
+	router.HandleFunc("/articles/{id:[0-9]+}", articlesShowHandler).Methods("GET").Name("articles.show")
+	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
+	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
+
+	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
+
+	homeUrl, _ := router.Get("home").URL()
+	fmt.Println("home url:", homeUrl)
+	articleUrl, _ := router.Get("articles.show").URL("id", "23")
+	fmt.Println("articles url:", articleUrl)
 
 	http.ListenAndServe(":3000", router)
 
