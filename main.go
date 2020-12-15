@@ -8,17 +8,15 @@ import (
 )
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "<h1>欢迎来到Blog</h1>")
 }
 
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "这里是关于页面 <a href=\"/\">首页</a>")
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
 	fmt.Fprint(w, "404 not found")
 }
 
@@ -34,6 +32,13 @@ func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "添加文章")
+}
+
+func forceHTMLMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -52,6 +57,8 @@ func main() {
 	fmt.Println("home url:", homeUrl)
 	articleUrl, _ := router.Get("articles.show").URL("id", "23")
 	fmt.Println("articles url:", articleUrl)
+
+	router.Use(forceHTMLMiddleware)
 
 	http.ListenAndServe(":3000", router)
 
