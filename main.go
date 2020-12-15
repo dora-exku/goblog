@@ -13,6 +13,7 @@ func handlerFunc(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "这里是关于页面")
 	} else {
 		fmt.Fprint(w, "页面未找到")
+
 	}
 }
 
