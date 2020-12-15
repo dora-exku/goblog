@@ -6,9 +6,16 @@ import (
 )
 
 func handlerFunc(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "<h1>Hello, 这里是 goblog</h1>")
-	fmt.Fprint(w, "路径:"+r.URL.Path)
+
+	if r.URL.Path == "/" {
+		fmt.Fprint(w, "这里是首页")
+	} else if r.URL.Path == "/about" {
+		fmt.Fprint(w, "这里是关于页面")
+	} else {
+		fmt.Fprint(w, "页面未找到")
+	}
 }
+
 func main() {
 	fmt.Println("http://localhost:3000")
 	http.HandleFunc("/", handlerFunc)
