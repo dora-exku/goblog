@@ -3,12 +3,21 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
+	"text/template"
+	"unicode/utf8"
 
 	"github.com/gorilla/mux"
 )
 
 var router = mux.NewRouter()
+
+type ArticlesFormData struct {
+	Title, Content string
+	URL            *url.URL
+	Errors         map[string]string
+}
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<h1>欢迎来到Blog</h1>")
@@ -34,15 +43,64 @@ func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		fmt.Fprint(w, "数据异常")
-		return
-	}
-	title := r.PostForm.Get("title")
+	title := r.PostFormValue("title")
+	content := r.PostFormValue("content")
 
-	fmt.Fprintf(w, "POST PostForm: %v <br>", r.PostForm)
-	fmt.Fprintf(w, "POST Form: %v <br>", r.Form)
-	fmt.Fprintf(w, "title 的值为: %v", title)
+	errors := make(map[string]string)
+
+	if title == "" {
+		errors["title"] = "标题不能为空"
+	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) >= 40 {
+		errors["title"] = "标题长度限制为 3-40"
+	}
+
+	if content == "" {
+		errors["content"] = "内容不能为空"
+	} else if utf8.RuneCountInString(content) < 10 {
+		errors["content"] = "内容长度需要大于10"
+	}
+
+	if len(errors) == 0 {
+		fmt.Fprint(w, "验证通过<br>")
+		fmt.Fprintf(w, "标题内容 %s<br>", title)
+		fmt.Fprintf(w, "提交内容 %s<br>", content)
+	} else {
+		html := `
+			<html>
+			<head>
+			<title>文章添加</title>
+			<style>.error {color:red;}</style>
+			</head>
+			<body>
+			<form action="{{ .URL }}" method="POST">
+			<p><input type="text" name="title" value="{{ .Title }}"></p>
+			{{ with .Errors.title }}
+			<p class="error">{{ . }}</p>
+			{{ end }}
+			<p><textarea name="content" row="4">{{ .Content }}</textarea></p>
+			{{ with .Errors.content }}
+			<p class="error">{{ . }}</p>
+			{{ end }}
+			<p><button>提交</button></p>
+			</form>
+			</body>
+			</html>
+			`
+		storeUrl, _ := router.Get("articles.store").URL()
+
+		data := ArticlesFormData{
+			Title:   title,
+			Content: content,
+			URL:     storeUrl,
+			Errors:  errors,
+		}
+
+		tmpl, err := template.New("create-form").Parse(html)
+		if err != nil {
+			panic(err)
+		}
+		tmpl.Execute(w, data)
+	}
 }
 
 func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
