@@ -65,27 +65,7 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "标题内容 %s<br>", title)
 		fmt.Fprintf(w, "提交内容 %s<br>", content)
 	} else {
-		html := `
-			<html>
-			<head>
-			<title>文章添加</title>
-			<style>.error {color:red;}</style>
-			</head>
-			<body>
-			<form action="{{ .URL }}" method="POST">
-			<p><input type="text" name="title" value="{{ .Title }}"></p>
-			{{ with .Errors.title }}
-			<p class="error">{{ . }}</p>
-			{{ end }}
-			<p><textarea name="content" row="4">{{ .Content }}</textarea></p>
-			{{ with .Errors.content }}
-			<p class="error">{{ . }}</p>
-			{{ end }}
-			<p><button>提交</button></p>
-			</form>
-			</body>
-			</html>
-			`
+
 		storeUrl, _ := router.Get("articles.store").URL()
 
 		data := ArticlesFormData{
@@ -95,7 +75,7 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 			Errors:  errors,
 		}
 
-		tmpl, err := template.New("create-form").Parse(html)
+		tmpl, err := template.ParseFiles("resources/views/articles/create.gohtml")
 		if err != nil {
 			panic(err)
 		}
@@ -104,24 +84,22 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
-	html := `
-	<html>
-	<head>
-	<title>文章添加</title>
-	</head>
-	<body>
-	<form action="%s" method="POST">
-	<p><input type="text" name="title"></p>
-	<p><textarea name="content" row="4"></textarea></p>
-	<p><button>提交</button></p>
-	</form>
-	</body>
-	</html>
-	`
 
 	storeUrl, _ := router.Get("articles.store").URL()
 
-	fmt.Fprintf(w, html, storeUrl)
+	data := ArticlesFormData{
+		Title:   "",
+		Content: "",
+		URL:     storeUrl,
+		Errors:  nil,
+	}
+	tmpl, err := template.ParseFiles("resources/views/articles/create.gohtml")
+
+	if err != nil {
+		panic(err)
+	}
+
+	tmpl.Execute(w, data)
 }
 
 func forceHTMLMiddleware(next http.Handler) http.Handler {
