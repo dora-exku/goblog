@@ -1,0 +1,23 @@
+<html>
+	<head>
+	    <title>文章编辑</title>
+        <style>
+            .error{
+                color:red;
+            }
+        </style>
+	</head>
+	<body>
+	<form action="{{ .URL }}" method="POST">
+	    <p><input type="text" name="title" value="{{ .Title }}"></p>
+        {{ with .Errors.title }}
+        <p class="error">{{ . }}</p>
+        {{ end }}
+	    <p><textarea name="content" row="4">{{ .Content }}</textarea></p>
+        {{ with .Errors.content }}
+        <p class="error">{{ . }}</p>
+        {{ end }}
+	    <p><button>提交</button></p>
+	</form>
+	</body>
+</html>

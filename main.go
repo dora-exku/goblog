@@ -44,15 +44,8 @@ type Article struct {
 }
 
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	article := Article{}
-	query := "select * from articles where id = ?"
-	stmt, err := db.Prepare(query)
-	checkError(err)
-	defer stmt.Close()
-	err = stmt.QueryRow(id).Scan(&article.ID, &article.Title, &article.Content)
+	id := getRouteVariable("id", r)
+	article, err := getArticleById(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			fmt.Fprint(w, "文章不存在")
@@ -77,19 +70,7 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.PostFormValue("title")
 	content := r.PostFormValue("content")
 
-	errors := make(map[string]string)
-
-	if title == "" {
-		errors["title"] = "标题不能为空"
-	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) >= 40 {
-		errors["title"] = "标题长度限制为 3-40"
-	}
-
-	if content == "" {
-		errors["content"] = "内容不能为空"
-	} else if utf8.RuneCountInString(content) < 10 {
-		errors["content"] = "内容长度需要大于10"
-	}
+	errors := validateArticleFormData(title, content)
 
 	if len(errors) == 0 {
 		lastInsertId, err := saveArticlesToDB(title, content)
@@ -136,6 +117,111 @@ func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Execute(w, data)
+}
+
+func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
+	id := getRouteVariable("id", r)
+	// 查询一条数据
+	article, err := getArticleById(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Fprint(w, "没有要修改的数据")
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "服务器内部错误")
+		}
+	} else {
+
+		updateUrl, _ := router.Get("articles.update").URL("id", id)
+		data := ArticlesFormData{
+			Title:   article.Title,
+			Content: article.Content,
+			URL:     updateUrl,
+			Errors:  nil,
+		}
+		tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
+		checkError(err)
+		tmpl.Execute(w, data)
+	}
+}
+
+func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	id := getRouteVariable("id", r)
+	_, err := getArticleById(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Fprint(w, "404 文章不存在")
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 服务器内部错误")
+		}
+	} else {
+		title := r.PostFormValue("title")
+		content := r.PostFormValue("content")
+
+		errors := validateArticleFormData(title, content)
+
+		if len(errors) == 0 {
+			query := "UPDATE articles set title = ? , content = ? WHERE id = ?"
+			rs, err := db.Exec(query, title, content, id)
+			if err != nil {
+				checkError(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, "服务器内部错误")
+			}
+
+			if n, _ := rs.RowsAffected(); n > 0 {
+				showUrl, _ := router.Get("articles.show").URL("id", id)
+				http.Redirect(w, r, showUrl.String(), http.StatusFound)
+			} else {
+				fmt.Fprint(w, "未作出任何改变")
+			}
+		} else {
+			updateUrl, _ := router.Get("articles.update").URL("id", id)
+			data := ArticlesFormData{
+				Title:   title,
+				Content: content,
+				URL:     updateUrl,
+				Errors:  errors,
+			}
+			tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
+			checkError(err)
+			tmpl.Execute(w, data)
+		}
+	}
+}
+
+func validateArticleFormData(title string, content string) map[string]string {
+	errors := make(map[string]string)
+	if title == "" {
+		errors["title"] = "标题不能为空"
+	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) >= 40 {
+		errors["title"] = "标题长度限制为 3-40"
+	}
+
+	if content == "" {
+		errors["content"] = "内容不能为空"
+	} else if utf8.RuneCountInString(content) < 10 {
+		errors["content"] = "内容长度需要大于10"
+	}
+	return errors
+}
+
+func getRouteVariable(parameterName string, r *http.Request) string {
+	vars := mux.Vars(r)
+	return vars[parameterName]
+}
+
+func getArticleById(id string) (Article, error) {
+	article := Article{}
+	query := "select * from articles where id = ?"
+	stmt, err := db.Prepare(query)
+	checkError(err)
+	defer stmt.Close()
+	err = stmt.QueryRow(id).Scan(&article.ID, &article.Title, &article.Content)
+	return article, err
 }
 
 func forceHTMLMiddleware(next http.Handler) http.Handler {
@@ -230,6 +316,8 @@ func main() {
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
 	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
 	router.HandleFunc("/articles/create", articlesCreateHandler).Methods("GET").Name("articles.create")
+	router.HandleFunc("/articles/{id:[0-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
+	router.HandleFunc("/articles/{id:[0-9+]}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 
