@@ -43,6 +43,15 @@ type Article struct {
 	ID             int64
 }
 
+func (a Article) Link() string {
+	showUrl, err := router.Get("articles.show").URL("id", strconv.FormatInt(a.ID, 10))
+	if err != nil {
+		checkError(err)
+		return ""
+	}
+	return showUrl.String()
+}
+
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	id := getRouteVariable("id", r)
 	article, err := getArticleById(id)
@@ -63,7 +72,26 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "文章列表")
+	// fmt.Fprint(w, "文章列表")
+	rows, err := db.Query("select * from articles")
+	checkError(err)
+	defer rows.Close()
+
+	var articles []Article
+
+	for rows.Next() {
+		var article Article
+
+		err := rows.Scan(&article.ID, &article.Title, &article.Content)
+		checkError(err)
+		articles = append(articles, article)
+	}
+	err = rows.Err()
+	checkError(err)
+
+	tmpl, err := template.ParseFiles("resources/views/articles/index.gohtml")
+	checkError(err)
+	tmpl.Execute(w, articles)
 }
 
 func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
@@ -320,11 +348,6 @@ func main() {
 	router.HandleFunc("/articles/{id:[0-9+]}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
-
-	homeUrl, _ := router.Get("home").URL()
-	fmt.Println("home url:", homeUrl)
-	articleUrl, _ := router.Get("articles.show").URL("id", "23")
-	fmt.Println("articles url:", articleUrl)
 
 	router.Use(forceHTMLMiddleware)
 

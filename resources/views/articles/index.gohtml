@@ -1,0 +1,20 @@
+<html>
+	<head>
+	    <title>文章列表</title>
+        <style>
+            .error{
+                color:red;
+            }
+        </style>
+	</head>
+	<body>
+	<h1>所有文章</h1>
+    <ul>
+    {{ range $key, $article := . }}
+        <li><a href="{{ $article.Link }}">ID: {{ $article.ID }} >> 标题: {{ $article.Title }}</a></li>
+    {{ end }}
+    </ul>
+
+
+	</body>
+</html>
