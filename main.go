@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -66,9 +67,14 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(errors) == 0 {
-		fmt.Fprint(w, "验证通过<br>")
-		fmt.Fprintf(w, "标题内容 %s<br>", title)
-		fmt.Fprintf(w, "提交内容 %s<br>", content)
+		lastInsertId, err := saveArticlesToDB(title, content)
+		if lastInsertId > 0 {
+			fmt.Fprint(w, "信息加入成功ID:"+strconv.FormatInt(lastInsertId, 10))
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "服务器内部错误")
+		}
 	} else {
 
 		storeUrl, _ := router.Get("articles.store").URL()
@@ -154,6 +160,32 @@ func createTables() {
 	);`
 	_, err := db.Exec(createArticlesSql)
 	checkError(err)
+}
+
+func saveArticlesToDB(title string, content string) (int64, error) {
+	var (
+		id   int64
+		err  error
+		rs   sql.Result
+		stmt *sql.Stmt
+	)
+	stmt, err = db.Prepare("INSERT INTO articles(title,content) VALUES(?,?)")
+	if err != nil {
+		return 0, err
+	}
+
+	defer stmt.Close()
+
+	rs, err = stmt.Exec(title, content)
+	if err != nil {
+		return 0, err
+	}
+
+	if id, err = rs.LastInsertId(); id > 0 {
+		return id, nil
+	}
+
+	return 0, err
 }
 
 func checkError(err error) {
