@@ -12,7 +12,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/go-sql-driver/mysql"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
@@ -131,23 +130,33 @@ func initDB() {
 	config := mysql.Config{
 		User:                 "homestead",
 		Passwd:               "secret",
-		Addr:                 "127.0.0.1:33060",
+		Addr:                 "192.168.10.10:3306",
 		Net:                  "tcp",
 		DBName:               "goblog",
 		AllowNativePasswords: true,
 	}
-	db, err := sql.Open("mysql", config.FormatDSN())
-	checkErr(err)
+	db, err = sql.Open("mysql", config.FormatDSN())
+	checkError(err)
 
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
 	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	err = db.Ping()
-	checkErr(err)
+	checkError(err)
 }
 
-func checkErr(err error) {
+func createTables() {
+	createArticlesSql := `CREATE TABLE IF NOT EXISTS articles(
+		id bigint(20) PRIMARY KEY AUTO_INCREMENT NOT NULL,
+		title varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+		content longtext COLLATE utf8mb4_unicode_ci
+	);`
+	_, err := db.Exec(createArticlesSql)
+	checkError(err)
+}
+
+func checkError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -155,6 +164,7 @@ func checkErr(err error) {
 
 func main() {
 	initDB()
+	createTables()
 	fmt.Println("http://localhost:3000")
 
 	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
