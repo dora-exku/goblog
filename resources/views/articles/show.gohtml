@@ -11,5 +11,11 @@
 	<p>ID:{{ .ID }}</p>
     <p>Title:{{ .Title }}</p>
     <p>Content:{{ .Content }}</p>
+
+    {{ $idString := Int64ToString .ID }}
+
+    <form action="{{ RouteName2Url "articles.delete" "id" $idString }}" method="post">
+        <button onclick="return confirm('删除操作不可逆')">删除</button>
+    </form>
 	</body>
 </html>
