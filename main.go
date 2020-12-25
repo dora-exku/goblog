@@ -67,7 +67,7 @@ func (a Article) Delete() (rowsAffected int64, err error) {
 }
 
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
-	id := getRouteVariable("id", r)
+	id := route.GetRouteVariable("id", r)
 	article, err := getArticleById(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -169,7 +169,7 @@ func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
-	id := getRouteVariable("id", r)
+	id := route.GetRouteVariable("id", r)
 	// 查询一条数据
 	article, err := getArticleById(id)
 	if err != nil {
@@ -197,7 +197,7 @@ func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	id := getRouteVariable("id", r)
+	id := route.GetRouteVariable("id", r)
 	_, err := getArticleById(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -245,7 +245,7 @@ func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	id := getRouteVariable("id", r)
+	id := route.GetRouteVariable("id", r)
 
 	article, err := getArticleById(id)
 
@@ -277,15 +277,6 @@ func articlesDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RouteName2Url(name string, pairs ...string) string {
-	url, err := router.Get(name).URL(pairs...)
-	if err != nil {
-		checkError(err)
-		return ""
-	}
-	return url.String()
-}
-
 func int64ToString(n int64) string {
 	return strconv.FormatInt(n, 10)
 }
@@ -304,11 +295,6 @@ func validateArticleFormData(title string, content string) map[string]string {
 		errors["content"] = "内容长度需要大于10"
 	}
 	return errors
-}
-
-func getRouteVariable(parameterName string, r *http.Request) string {
-	vars := mux.Vars(r)
-	return vars[parameterName]
 }
 
 func getArticleById(id string) (Article, error) {
