@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"goblog/pkg/database"
 	"goblog/pkg/logger"
 	"goblog/pkg/route"
 	"goblog/pkg/types"
@@ -11,10 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-	"time"
 	"unicode/utf8"
 
-	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
@@ -325,38 +324,6 @@ func removeTrailingSlash(next http.Handler) http.Handler {
 	})
 }
 
-func initDB() {
-	var err error
-
-	config := mysql.Config{
-		User:                 "homestead",
-		Passwd:               "secret",
-		Addr:                 "192.168.10.10:3306",
-		Net:                  "tcp",
-		DBName:               "goblog",
-		AllowNativePasswords: true,
-	}
-	db, err = sql.Open("mysql", config.FormatDSN())
-	logger.LogError(err)
-
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
-	db.SetConnMaxIdleTime(5 * time.Minute)
-
-	err = db.Ping()
-	logger.LogError(err)
-}
-
-func createTables() {
-	createArticlesSql := `CREATE TABLE IF NOT EXISTS articles(
-		id bigint(20) PRIMARY KEY AUTO_INCREMENT NOT NULL,
-		title varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-		content longtext COLLATE utf8mb4_unicode_ci
-	);`
-	_, err := db.Exec(createArticlesSql)
-	logger.LogError(err)
-}
-
 func saveArticlesToDB(title string, content string) (int64, error) {
 	var (
 		id   int64
@@ -384,8 +351,8 @@ func saveArticlesToDB(title string, content string) (int64, error) {
 }
 
 func main() {
-	initDB()
-	createTables()
+	database.Initialize()
+	db = database.DB
 	fmt.Println("http://localhost:3000")
 
 	route.Initialize()
