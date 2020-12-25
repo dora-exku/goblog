@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"goblog/pkg/route"
 	"log"
 	"net/http"
 	"net/url"
@@ -80,7 +81,7 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		tmpl, err := template.New("show.gohtml").
 			Funcs(template.FuncMap{
-				"RouteName2Url": RouteName2Url,
+				"RouteName2Url": route.Name2URL,
 				"Int64ToString": int64ToString,
 			}).
 			ParseFiles("resources/views/articles/show.gohtml")
@@ -405,6 +406,9 @@ func main() {
 	initDB()
 	createTables()
 	fmt.Println("http://localhost:3000")
+
+	route.Initialize()
+	router = route.Router
 
 	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
 	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")

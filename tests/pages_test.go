@@ -23,6 +23,7 @@ import (
 // }
 
 func TestAllPages(t *testing.T) {
+
 	baseUrl := "http://127.0.0.1:3000"
 
 	var tests = []struct {
