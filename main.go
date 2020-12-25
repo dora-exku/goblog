@@ -333,6 +333,7 @@ func main() {
 	db = database.DB
 	fmt.Println("http://localhost:3000")
 
+	bootstrap.SetupDB()
 	router = bootstrap.SetopRoute()
 
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
