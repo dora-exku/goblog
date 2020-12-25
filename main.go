@@ -3,10 +3,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"goblog/bootstrap"
 	"goblog/pkg/database"
 	"goblog/pkg/logger"
-	"goblog/pkg/route"
-	"goblog/pkg/types"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -64,32 +63,6 @@ func (a Article) Delete() (rowsAffected int64, err error) {
 		return n, nil
 	}
 	return 0, nil
-}
-
-func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
-	id := route.GetRouteVariable("id", r)
-	article, err := getArticleById(id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, "文章不存在")
-		} else {
-			logger.LogError(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "服务器内部错误")
-		}
-	} else {
-		tmpl, err := template.New("show.gohtml").
-			Funcs(template.FuncMap{
-				"RouteName2Url": route.Name2URL,
-				"Int64ToString": types.Int64ToString,
-			}).
-			ParseFiles("resources/views/articles/show.gohtml")
-		if err != nil {
-			panic(err)
-		}
-		tmpl.Execute(w, article)
-	}
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +142,7 @@ func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
-	id := route.GetRouteVariable("id", r)
+	id := getRouteVariable("id", r)
 	// 查询一条数据
 	article, err := getArticleById(id)
 	if err != nil {
@@ -197,7 +170,7 @@ func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	id := route.GetRouteVariable("id", r)
+	id := getRouteVariable("id", r)
 	_, err := getArticleById(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -245,7 +218,7 @@ func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	id := route.GetRouteVariable("id", r)
+	id := getRouteVariable("id", r)
 
 	article, err := getArticleById(id)
 
@@ -350,15 +323,18 @@ func saveArticlesToDB(title string, content string) (int64, error) {
 	return 0, err
 }
 
+func getRouteVariable(parameterName string, r *http.Request) string {
+	vars := mux.Vars(r)
+	return vars[parameterName]
+}
+
 func main() {
 	database.Initialize()
 	db = database.DB
 	fmt.Println("http://localhost:3000")
 
-	route.Initialize()
-	router = route.Router
+	router = bootstrap.SetopRoute()
 
-	router.HandleFunc("/articles/{id:[0-9]+}", articlesShowHandler).Methods("GET").Name("articles.show")
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
 	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
 	router.HandleFunc("/articles/create", articlesCreateHandler).Methods("GET").Name("articles.create")
