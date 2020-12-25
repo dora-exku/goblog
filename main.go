@@ -70,9 +70,11 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	article, err := getArticleById(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, "文章不存在")
 		} else {
 			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "服务器内部错误")
 		}
 	} else {
