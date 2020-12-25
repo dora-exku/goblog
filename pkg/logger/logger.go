@@ -1,9 +1,11 @@
 package logger
 
-import "log"
+import (
+	"fmt"
+)
 
 func LogError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 }
