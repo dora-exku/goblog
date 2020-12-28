@@ -65,29 +65,6 @@ func (a Article) Delete() (rowsAffected int64, err error) {
 	return 0, nil
 }
 
-func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	// fmt.Fprint(w, "文章列表")
-	rows, err := db.Query("select * from articles")
-	logger.LogError(err)
-	defer rows.Close()
-
-	var articles []Article
-
-	for rows.Next() {
-		var article Article
-
-		err := rows.Scan(&article.ID, &article.Title, &article.Content)
-		logger.LogError(err)
-		articles = append(articles, article)
-	}
-	err = rows.Err()
-	logger.LogError(err)
-
-	tmpl, err := template.ParseFiles("resources/views/articles/index.gohtml")
-	logger.LogError(err)
-	tmpl.Execute(w, articles)
-}
-
 func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.PostFormValue("title")
 	content := r.PostFormValue("content")
@@ -336,9 +313,6 @@ func main() {
 	bootstrap.SetupDB()
 	router = bootstrap.SetopRoute()
 
-	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
-	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
-	router.HandleFunc("/articles/create", articlesCreateHandler).Methods("GET").Name("articles.create")
 	router.HandleFunc("/articles/{id:[0-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
 	router.HandleFunc("/articles/{id:[0-9+]}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 	router.HandleFunc("/articles/{id:[0-9+]}/delete", articlesDeleteHandler).Methods("POST").Name("articles.delete")
