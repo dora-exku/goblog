@@ -289,10 +289,6 @@ func main() {
 	bootstrap.SetupDB()
 	router = bootstrap.SetopRoute()
 
-	router.HandleFunc("/articles/{id:[0-9+]}/delete", articlesDeleteHandler).Methods("POST").Name("articles.delete")
-
-	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
-
 	router.Use(forceHTMLMiddleware)
 
 	http.ListenAndServe(":3000", removeTrailingSlash(router))

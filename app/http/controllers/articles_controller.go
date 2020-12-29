@@ -211,3 +211,36 @@ func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func (*ArticlesController) Delete(w http.ResponseWriter, r *http.Request) {
+	id := route.GetRouteVariable("id", r)
+
+	article, err := article.Get(id)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "数据不存在")
+		} else {
+			logger.LogError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "服务器内部错误")
+		}
+	} else {
+		rowsAffected, err := article.Delete()
+
+		if err != nil {
+			logger.LogError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "服务器内部错误")
+		} else {
+			if rowsAffected > 0 {
+				indexUrl := route.Name2URL("articles.index")
+				http.Redirect(w, r, indexUrl, http.StatusFound)
+			} else {
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprint(w, "文章未找到")
+			}
+		}
+	}
+}
