@@ -119,31 +119,7 @@ func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
-	id := getRouteVariable("id", r)
-	// 查询一条数据
-	article, err := getArticleById(id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, "文章不存在")
-		} else {
-			logger.LogError(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "服务器内部错误")
-		}
-	} else {
 
-		updateUrl, _ := router.Get("articles.update").URL("id", id)
-		data := ArticlesFormData{
-			Title:   article.Title,
-			Content: article.Content,
-			URL:     updateUrl,
-			Errors:  nil,
-		}
-		tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
-		logger.LogError(err)
-		tmpl.Execute(w, data)
-	}
 }
 
 func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
@@ -313,8 +289,6 @@ func main() {
 	bootstrap.SetupDB()
 	router = bootstrap.SetopRoute()
 
-	router.HandleFunc("/articles/{id:[0-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
-	router.HandleFunc("/articles/{id:[0-9+]}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 	router.HandleFunc("/articles/{id:[0-9+]}/delete", articlesDeleteHandler).Methods("POST").Name("articles.delete")
 
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)

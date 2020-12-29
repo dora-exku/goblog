@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"database/sql"
 	"fmt"
 	"goblog/app/models/article"
 	"goblog/pkg/logger"
@@ -133,4 +134,80 @@ func (*ArticlesController) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Execute(w, data)
+}
+
+func (*ArticlesController) Edit(w http.ResponseWriter, r *http.Request) {
+	id := route.GetRouteVariable("id", r)
+	// 查询一条数据
+	article, err := article.Get(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "文章不存在")
+		} else {
+			logger.LogError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "服务器内部错误")
+		}
+	} else {
+
+		updateUrl := route.Name2URL("articles.show", "id", id)
+		data := ArticlesFormData{
+			Title:   article.Title,
+			Content: article.Content,
+			URL:     updateUrl,
+			Errors:  nil,
+		}
+		tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
+		logger.LogError(err)
+		tmpl.Execute(w, data)
+	}
+}
+
+func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
+	id := route.GetRouteVariable("id", r)
+	// 查询一条数据
+	_article, err := article.Get(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "文章不存在")
+		} else {
+			logger.LogError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "服务器内部错误")
+		}
+	} else {
+		title := r.PostFormValue("title")
+		content := r.PostFormValue("content")
+		errors := validateArticleFormData(title, content)
+
+		if len(errors) == 0 {
+			_article.Title = title
+			_article.Content = content
+			rowsAffected, err := _article.Update()
+			if err != nil {
+				logger.LogError(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, "服务器内部错误")
+			}
+			if rowsAffected > 0 {
+				fmt.Fprint(w, "信息修改成功ID:"+strconv.FormatInt(_article.ID, 10))
+			} else {
+				fmt.Fprint(w, "您没有做出任何更改")
+			}
+		} else {
+
+			updateUrl := route.Name2URL("articles.update", "id", id)
+			data := ArticlesFormData{
+				Title:   title,
+				Content: content,
+				URL:     updateUrl,
+				Errors:  errors,
+			}
+			tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
+			logger.LogError(err)
+			tmpl.Execute(w, data)
+		}
+	}
 }
