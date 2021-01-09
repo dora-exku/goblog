@@ -6,11 +6,9 @@ import (
 	"goblog/app/models/article"
 	"goblog/pkg/logger"
 	"goblog/pkg/route"
-	"goblog/pkg/types"
+	"goblog/pkg/view"
 	"html/template"
 	"net/http"
-	"path/filepath"
-	"strconv"
 	"unicode/utf8"
 
 	"gorm.io/gorm"
@@ -32,18 +30,7 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 
-		viewDir := "resources/views"
-
-		files, err := filepath.Glob(viewDir + "/layouts/*.gohtml")
-		logger.LogError(err)
-		newFiles := append(files, viewDir+"/articles/show.gohtml")
-		tmpl, err := template.New("show.gohtml").
-			Funcs(template.FuncMap{
-				"RouteName2URL": route.Name2URL,
-				"Int64ToString": types.Int64ToString,
-			}).ParseFiles(newFiles...)
-		logger.LogError(err)
-		tmpl.ExecuteTemplate(w, "app", article)
+		view.Render(w, "articles.show", article)
 	}
 }
 
@@ -56,14 +43,7 @@ func (*ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "500 server error")
 	} else {
-		viewDir := "resources/views"
-
-		files, err := filepath.Glob(viewDir + "/layouts/*.gohtml")
-		logger.LogError(err)
-		newFiles := append(files, viewDir+"/articles/index.gohtml")
-		tmpl, err := template.ParseFiles(newFiles...)
-		logger.LogError(err)
-		tmpl.ExecuteTemplate(w, "app", articles)
+		view.Render(w, "articles.index", articles)
 	}
 }
 
@@ -96,7 +76,7 @@ func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
 		}
 		_article.Create()
 		if _article.ID > 0 {
-			fmt.Fprint(w, "信息加入成功ID:"+strconv.FormatInt(_article.ID, 10))
+			fmt.Fprint(w, "信息加入成功ID:"+_article.GetStringId())
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "服务器内部错误")
@@ -201,7 +181,7 @@ func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, "服务器内部错误")
 			}
 			if rowsAffected > 0 {
-				fmt.Fprint(w, "信息修改成功ID:"+strconv.FormatInt(_article.ID, 10))
+				fmt.Fprint(w, "信息修改成功ID:"+_article.GetStringId())
 			} else {
 				fmt.Fprint(w, "您没有做出任何更改")
 			}
