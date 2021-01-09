@@ -31,16 +31,19 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "服务器内部错误")
 		}
 	} else {
+
+		viewDir := "resources/views"
+
+		files, err := filepath.Glob(viewDir + "/layouts/*.gohtml")
+		logger.LogError(err)
+		newFiles := append(files, viewDir+"/articles/show.gohtml")
 		tmpl, err := template.New("show.gohtml").
 			Funcs(template.FuncMap{
-				"RouteName2Url": route.Name2URL,
+				"RouteName2URL": route.Name2URL,
 				"Int64ToString": types.Int64ToString,
-			}).
-			ParseFiles("resources/views/articles/show.gohtml")
-		if err != nil {
-			panic(err)
-		}
-		tmpl.Execute(w, article)
+			}).ParseFiles(newFiles...)
+		logger.LogError(err)
+		tmpl.ExecuteTemplate(w, "app", article)
 	}
 }
 
