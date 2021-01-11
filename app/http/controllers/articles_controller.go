@@ -88,16 +88,16 @@ func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "服务器内部错误")
 		}
 	} else {
-		view.Render(w, ArticlesFormData{
-			Title:   title,
-			Content: content,
-			Errors:  errors,
+		view.Render(w, view.D{
+			"Title":   title,
+			"Content": content,
+			"Errors":  errors,
 		}, "articles.create", "articles._form_field")
 	}
 }
 
 func (*ArticlesController) Create(w http.ResponseWriter, r *http.Request) {
-	view.Render(w, ArticlesFormData{}, "articles.create", "articles._form_field")
+	view.Render(w, view.D{}, "articles.create", "articles._form_field")
 }
 
 func (*ArticlesController) Edit(w http.ResponseWriter, r *http.Request) {
@@ -114,11 +114,11 @@ func (*ArticlesController) Edit(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "服务器内部错误")
 		}
 	} else {
-		view.Render(w, ArticlesFormData{
-			Title:   _article.Title,
-			Content: _article.Content,
-			Article: _article,
-			Errors:  nil,
+		view.Render(w, view.D{
+			"Title":   _article.Title,
+			"Content": _article.Content,
+			"Article": _article,
+			"Errors":  nil,
 		}, "articles.edit", "articles._form_field")
 	}
 }
@@ -157,11 +157,11 @@ func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 
-			view.Render(w, ArticlesFormData{
-				Title:   title,
-				Content: content,
-				Article: _article,
-				Errors:  errors,
+			view.Render(w, view.D{
+				"Title":   title,
+				"Content": content,
+				"Article": _article,
+				"Errors":  errors,
 			}, "articles.edit", "articles._form_field")
 		}
 	}
