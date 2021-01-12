@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"goblog/app/models/user"
+	"goblog/app/requests"
 	"goblog/pkg/view"
 	"net/http"
 )
@@ -16,21 +17,31 @@ func (*AuthController) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (*AuthController) DoRegister(w http.ResponseWriter, r *http.Request) {
-	name := r.PostFormValue("name")
-	email := r.PostFormValue("email")
-	password := r.PostFormValue("password")
 
+	// 初始化数据
 	_user := user.User{
-		Name:     name,
-		Email:    email,
-		Password: password,
+		Name:            r.PostFormValue("name"),
+		Email:           r.PostFormValue("email"),
+		Password:        r.PostFormValue("password"),
+		PasswordComfirm: r.PostFormValue("password_comfirm"),
 	}
-	_user.Create()
-	if _user.ID > 0 {
-		fmt.Fprint(w, "用户创建成功ID："+_user.GetStringId())
+
+	errs := requests.ValidateRegistrationForm(_user)
+
+	if len(errs) > 0 {
+
+		view.RenderSimple(w, view.D{
+			"Errors": errs,
+			"User":   _user,
+		}, "auth.register")
 	} else {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, "用户创建失败")
+		_user.Create()
+		if _user.ID > 0 {
+			fmt.Fprint(w, "用户创建成功ID："+_user.GetStringId())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "用户创建失败")
+		}
 	}
 
 }
