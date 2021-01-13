@@ -12,8 +12,7 @@ type AuthController struct {
 }
 
 func (*AuthController) Register(w http.ResponseWriter, r *http.Request) {
-
-	view.RenderSimple(w, view.D{}, "auth.register")
+	view.RenderSimple(w, view.D{"User": user.User{}}, "auth.register")
 }
 
 func (*AuthController) DoRegister(w http.ResponseWriter, r *http.Request) {
