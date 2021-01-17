@@ -37,7 +37,9 @@ func (*AuthController) DoRegister(w http.ResponseWriter, r *http.Request) {
 	} else {
 		_user.Create()
 		if _user.ID > 0 {
-			fmt.Fprint(w, "用户创建成功ID："+_user.GetStringId())
+			// fmt.Fprint(w, "用户创建成功ID："+_user.GetStringId())
+			auth.Login(_user)
+			http.Redirect(w, r, "/", http.StatusFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "用户创建失败")
@@ -63,4 +65,9 @@ func (*AuthController) DoLogin(w http.ResponseWriter, r *http.Request) {
 			"Password": password,
 		}, "auth.login")
 	}
+}
+
+func (*AuthController) Logout(w http.ResponseWriter, r *http.Request) {
+	auth.Logout()
+	http.Redirect(w, r, "/", http.StatusFound)
 }
