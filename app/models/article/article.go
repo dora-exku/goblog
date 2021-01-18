@@ -8,8 +8,9 @@ import (
 
 type Article struct {
 	models.BaseModel
-	Title   string
-	Content string
+	Title   string `gorm:"column:title;varchat(255);not null" valid:"title"`
+	Content string `gorm:"column:content;longtext;not null" valid:"content"`
+	UserId  uint64 `gorm:"column:user_id;not null;default:0;index"`
 }
 
 func (a Article) Link() string {

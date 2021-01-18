@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"goblog/app/models/article"
+	"goblog/app/requests"
+	"goblog/pkg/flash"
 	"goblog/pkg/logger"
 	"goblog/pkg/route"
 	"goblog/pkg/view"
 	"net/http"
-	"unicode/utf8"
 
 	"gorm.io/gorm"
 )
@@ -57,44 +58,30 @@ func (*ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func validateArticleFormData(title string, content string) map[string]string {
-	errors := make(map[string]string)
-	if title == "" {
-		errors["title"] = "标题不能为空"
-	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) >= 40 {
-		errors["title"] = "标题长度限制为 3-40"
-	}
-
-	if content == "" {
-		errors["content"] = "内容不能为空"
-	} else if utf8.RuneCountInString(content) < 10 {
-		errors["content"] = "内容长度需要大于10"
-	}
-	return errors
-}
-
 func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
 	title := r.PostFormValue("title")
 	content := r.PostFormValue("content")
 
-	errors := validateArticleFormData(title, content)
+	_article := article.Article{
+		Title:   title,
+		Content: content,
+	}
+
+	errors := requests.ValidateArticleForm(_article)
 
 	if len(errors) == 0 {
-		_article := article.Article{
-			Title:   title,
-			Content: content,
-		}
+
 		_article.Create()
 		if _article.ID > 0 {
-			fmt.Fprint(w, "信息加入成功ID:"+_article.GetStringId())
+			flash.Success("文章添加成功")
+			http.Redirect(w, r, route.Name2URL("articles.show", "id", _article.GetStringId()), http.StatusFound)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "服务器内部错误")
 		}
 	} else {
 		view.Render(w, view.D{
-			"Title":   title,
-			"Content": content,
+			"Article": _article,
 			"Errors":  errors,
 		}, "articles.create", "articles._form_field")
 	}
@@ -143,11 +130,12 @@ func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
 	} else {
 		title := r.PostFormValue("title")
 		content := r.PostFormValue("content")
-		errors := validateArticleFormData(title, content)
+		_article.Title = title
+		_article.Content = content
+		errors := requests.ValidateArticleForm(_article)
 
 		if len(errors) == 0 {
-			_article.Title = title
-			_article.Content = content
+
 			rowsAffected, err := _article.Update()
 			if err != nil {
 				logger.LogError(err)
