@@ -46,7 +46,6 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 func (*ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprint(w, "文章列表")
 	articles, err := article.GetAll()
-
 	if err != nil {
 		logger.LogError(err)
 		w.WriteHeader(http.StatusInternalServerError)

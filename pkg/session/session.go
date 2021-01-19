@@ -1,13 +1,14 @@
 package session
 
 import (
+	"goblog/pkg/config"
 	"goblog/pkg/logger"
 	"net/http"
 
 	"github.com/gorilla/sessions"
 )
 
-var Store = sessions.NewCookieStore([]byte("33446a9dcf9ea060a0a6532b166da32f304af0de"))
+var Store = sessions.NewCookieStore([]byte(config.GetString("key")))
 
 var Session *sessions.Session
 
@@ -17,7 +18,7 @@ var Response http.ResponseWriter
 
 func SessionStart(w http.ResponseWriter, r *http.Request) {
 	var err error
-	Session, err = Store.Get(r, "session-id")
+	Session, err = Store.Get(r, config.GetString("session_name"))
 	logger.LogError(err)
 	Request = r
 	Response = w
