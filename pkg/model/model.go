@@ -35,7 +35,7 @@ func ConnectDB() *gorm.DB {
 	var level gormlogger.LogLevel
 
 	if config.GetBool("app.debug") {
-		level = gormlogger.Warn
+		level = gormlogger.Info
 	} else {
 		level = gormlogger.Error
 	}
