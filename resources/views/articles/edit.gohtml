@@ -9,8 +9,7 @@
     <h3>编辑文章</h3>
 
     <form action="{{ RouteName2URL "articles.update" "id" .Article.GetStringId }}" method="post">
-
-      {{template "form-fields" .}}
+{{template "form-fields" .}}
 
       <button type="submit" class="btn btn-primary mt-3">更新</button>
 

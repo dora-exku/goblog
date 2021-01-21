@@ -23,6 +23,14 @@ func GetAll() ([]Article, error) {
 	return articles, nil
 }
 
+func GetByUserId(uid string) ([]Article, error) {
+	var articles []Article
+	if err := model.DB.Where("user_id = ?", uid).Preload("User").Find(&articles).Error; err != nil {
+		return articles, err
+	}
+	return articles, nil
+}
+
 func (article *Article) Create() error {
 	if err := model.DB.Create(article).Error; err != nil {
 		logger.LogError(err)

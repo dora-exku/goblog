@@ -24,8 +24,8 @@ func RegisterWebRoutes(r *mux.Router) {
 	r.HandleFunc("/articles/create", middlewares.Auth(ac.Create)).Methods("GET").Name("articles.create")
 
 	r.HandleFunc("/articles/{id:[0-9]+}/edit", middlewares.Auth(ac.Edit)).Methods("GET").Name("articles.edit")
-	r.HandleFunc("/articles/{id:[0-9+]}", middlewares.Auth(ac.Update)).Methods("POST").Name("articles.update")
-	r.HandleFunc("/articles/{id:[0-9+]}/delete", middlewares.Auth(ac.Delete)).Methods("POST").Name("articles.delete")
+	r.HandleFunc("/articles/{id:[0-9]+}", middlewares.Auth(ac.Update)).Methods("POST").Name("articles.update")
+	r.HandleFunc("/articles/{id:[0-9]+}/delete", middlewares.Auth(ac.Delete)).Methods("POST").Name("articles.delete")
 
 	r.PathPrefix("/css/").Handler(http.FileServer(http.Dir("./public")))
 	r.PathPrefix("/js/").Handler(http.FileServer(http.Dir("./public")))
@@ -40,6 +40,10 @@ func RegisterWebRoutes(r *mux.Router) {
 	r.HandleFunc("/auth/login", middlewares.Guest(auc.Login)).Methods("GET").Name("auth.login")
 	r.HandleFunc("/auth/dologin", middlewares.Guest(auc.DoLogin)).Methods("POST").Name("auth.dologin")
 	r.HandleFunc("/auth/logout", middlewares.Auth(auc.Logout)).Methods("POST").Name("auth.logout")
+
+	// 用户
+	user := new(controllers.UsersController)
+	r.HandleFunc("/users/{id:[0-9]+}", user.Show).Methods("GET").Name("users.show")
 
 	r.Use(middlewares.StartSession)
 }

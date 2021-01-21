@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"goblog/app/models/article"
+	"goblog/app/policies"
 	"goblog/app/requests"
 	"goblog/pkg/flash"
 	"goblog/pkg/logger"
@@ -104,17 +105,22 @@ func (*ArticlesController) Edit(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "服务器内部错误")
 		}
 	} else {
+
 		view.Render(w, view.D{
 			"Title":   _article.Title,
 			"Content": _article.Content,
 			"Article": _article,
-			"Errors":  nil,
+			"Errors":  view.D{},
 		}, "articles.edit", "articles._form_field")
+
 	}
 }
 
 func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
 	id := route.GetRouteVariable("id", r)
+	title := r.PostFormValue("title")
+	content := r.PostFormValue("content")
+
 	// 查询一条数据
 	_article, err := article.Get(id)
 	if err != nil {
@@ -127,33 +133,34 @@ func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "服务器内部错误")
 		}
 	} else {
-		title := r.PostFormValue("title")
-		content := r.PostFormValue("content")
-		_article.Title = title
-		_article.Content = content
-		errors := requests.ValidateArticleForm(_article)
 
-		if len(errors) == 0 {
-
-			rowsAffected, err := _article.Update()
-			if err != nil {
-				logger.LogError(err)
-				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprint(w, "服务器内部错误")
-			}
-			if rowsAffected > 0 {
-				fmt.Fprint(w, "信息修改成功ID:"+_article.GetStringId())
-			} else {
-				fmt.Fprint(w, "您没有做出任何更改")
-			}
+		if !policies.CanModifyArticle(_article) {
+			flash.Warning("您没有权限修改当前文章")
+			http.Redirect(w, r, "/", http.StatusFound)
 		} else {
-
-			view.Render(w, view.D{
-				"Title":   title,
-				"Content": content,
-				"Article": _article,
-				"Errors":  errors,
-			}, "articles.edit", "articles._form_field")
+			_article.Title = title
+			_article.Content = content
+			errors := requests.ValidateArticleForm(_article)
+			if len(errors) == 0 {
+				rowsAffected, err := _article.Update()
+				if err != nil {
+					logger.LogError(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprint(w, "服务器内部错误")
+				}
+				if rowsAffected > 0 {
+					fmt.Fprint(w, "信息修改成功ID:"+_article.GetStringId())
+				} else {
+					fmt.Fprint(w, "您没有做出任何更改")
+				}
+			} else {
+				view.Render(w, view.D{
+					"Title":   title,
+					"Content": content,
+					"Article": _article,
+					"Errors":  errors,
+				}, "articles.edit", "articles._form_field")
+			}
 		}
 	}
 }
