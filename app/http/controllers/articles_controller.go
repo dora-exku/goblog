@@ -26,7 +26,7 @@ type ArticlesFormData struct {
 
 func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 	id := route.GetRouteVariable("id", r)
-	article, err := article.Get(id)
+	_article, err := article.Get(id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			w.WriteHeader(http.StatusNotFound)
@@ -39,7 +39,8 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		view.Render(w, view.D{
-			"Article": article,
+			"Article":          _article,
+			"CanModifyArticle": policies.CanModifyArticle(_article),
 		}, "articles.show", "articles._article_meta")
 	}
 }
@@ -106,12 +107,18 @@ func (*ArticlesController) Edit(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 
-		view.Render(w, view.D{
-			"Title":   _article.Title,
-			"Content": _article.Content,
-			"Article": _article,
-			"Errors":  view.D{},
-		}, "articles.edit", "articles._form_field")
+		if !policies.CanModifyArticle(_article) {
+			flash.Warning("您没有权限修改当前文章")
+			http.Redirect(w, r, "/", http.StatusFound)
+		} else {
+
+			view.Render(w, view.D{
+				"Title":   _article.Title,
+				"Content": _article.Content,
+				"Article": _article,
+				"Errors":  view.D{},
+			}, "articles.edit", "articles._form_field")
+		}
 
 	}
 }
