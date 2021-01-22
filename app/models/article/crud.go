@@ -32,12 +32,15 @@ func GetAll(r *http.Request, perPage int) ([]Article, pagination.ViewData, error
 	return articles, viewData, nil
 }
 
-func GetByUserId(uid string) ([]Article, error) {
+func GetByUserId(uid string, r *http.Request, perPage int) ([]Article, pagination.ViewData, error) {
+	db := model.DB.Model(Article{}).Order("id desc").Where("user_id = ?", uid)
+	_pager := pagination.New(r, db, route.Name2URL("users.show"), perPage)
+	viewData := _pager.Paging()
 	var articles []Article
-	if err := model.DB.Where("user_id = ?", uid).Preload("User").Find(&articles).Error; err != nil {
-		return articles, err
+	if err := _pager.Results(&articles); err != nil {
+		return articles, viewData, err
 	}
-	return articles, nil
+	return articles, viewData, nil
 }
 
 func (article *Article) Create() error {

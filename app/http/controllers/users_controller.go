@@ -26,14 +26,15 @@ func (us *UsersController) Show(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		us.ResponseForSQLError(w, err)
 	} else {
-		articles, err := article.GetByUserId(_user.GetStringId())
+		articles, PagerData, err := article.GetByUserId(_user.GetStringId(), r, 2)
 		if err != nil {
 			logger.LogError(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "500 服务器错误")
 		} else {
 			view.Render(w, view.D{
-				"Articles": articles,
+				"Articles":  articles,
+				"PagerData": PagerData,
 			}, "articles.index", "articles._article_meta")
 		}
 	}
