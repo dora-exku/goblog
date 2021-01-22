@@ -39,14 +39,15 @@ func (ac *ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 
 func (*ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprint(w, "文章列表")
-	articles, err := article.GetAll()
+	articles, PagerData, err := article.GetAll(r, 2)
 	if err != nil {
 		logger.LogError(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "500 server error")
 	} else {
 		view.Render(w, view.D{
-			"Articles": articles,
+			"Articles":  articles,
+			"PagerData": PagerData,
 		}, "articles.index", "articles._article_meta")
 	}
 }
